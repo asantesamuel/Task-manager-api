@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  urls      Url[]
+  createdAt DateTime @default(now())
+}
+
+model Url {
+  id          String    @id @default(uuid())
+  originalUrl String
+  shortCode   String    @unique
+  isActive    Boolean   @default(true)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  clicks      Click[]
+  createdAt   DateTime  @default(now())
+}
+
+model Click {
+  id        String   @id @default(uuid())
+  urlId     String
+  url       Url      @relation(fields: [urlId], references: [id])
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
