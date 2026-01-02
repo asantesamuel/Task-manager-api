@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { PrismaClient } from "@prisma/client/extension";
+// import { PrismaClient } from "@prisma/client/extension";
 import { generateToken } from "../utils/jwt";
 
-const prisma = new PrismaClient();
+import { PrismaClient } from './generated/prisma/edge'
+
+const prisma = new PrismaClient()
+// use `prisma` in your application to read and write data in your DB
 
 export const register = async (req: Request, res: Response) => {
   const { email, password } = req.body;

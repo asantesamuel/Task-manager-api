@@ -1,9 +1,12 @@
 import { Response } from "express";
-import { PrismaClient } from "@prisma/client/extension";
+// import { PrismaClient } from "@prisma/client/extension";
 import { generateCode } from "../utils/generateCode";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
-const prisma = new PrismaClient();
+import { PrismaClient } from './generated/prisma/edge'
+
+const prisma = new PrismaClient()
+// use `prisma` in your application to read and write data in your DB
 
 export const createShortUrl = async (req: AuthRequest, res: Response) => {
   const { originalUrl } = req.body;
