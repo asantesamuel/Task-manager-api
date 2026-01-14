@@ -1,44 +1,31 @@
 import { Response } from "express";
-// import { PrismaClient } from "@prisma/client/extension";
 import { generateCode } from "../utils/generateCode";
 import { AuthRequest } from "../middlewares/auth.middleware";
-
-import { PrismaClient } from './generated/prisma/edge'
-
-const prisma = new PrismaClient()
-// use `prisma` in your application to read and write data in your DB
+import { query } from "../db";
 
 export const createShortUrl = async (req: AuthRequest, res: Response) => {
   const { originalUrl } = req.body;
 
-  const url = await prisma.url.create({
-    data: {
-      originalUrl,
-      shortCode: generateCode(),
-      userId: req.userId!,
-    },
-  });
+  const shortCode = generateCode();
+  const result = await query(
+    `INSERT INTO urls (original_url, short_code, user_id, is_active) VALUES ($1, $2, $3, true) RETURNING *`,
+    [originalUrl, shortCode, req.userId]
+  );
 
-  res.json(url);
+  res.json(result.rows[0]);
 };
 
 export const redirectUrl = async (req: any, res: Response) => {
   const { code } = req.params;
+  const result = await query(`SELECT * FROM urls WHERE short_code = $1`, [code]);
+  const url = result.rows[0];
 
-  const url = await prisma.url.findUnique({
-    where: { shortCode: code },
-  });
+  if (!url || !url.is_active) return res.status(404).json({ message: "Link not found" });
 
-  if (!url || !url.isActive)
-    return res.status(404).json({ message: "Link not found" });
+  await query(
+    `INSERT INTO clicks (url_id, ip, user_agent) VALUES ($1, $2, $3)`,
+    [url.id, req.ip, req.headers["user-agent"]]
+  );
 
-  await prisma.click.create({
-    data: {
-      urlId: url.id,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-    },
-  });
-
-  res.redirect(url.originalUrl);
+  res.redirect(url.original_url);
 };

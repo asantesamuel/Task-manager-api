@@ -1,9 +1,2 @@
-import { defineConfig, env } from 'prisma/config';
-
-export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  datasource: {
-    // We add a fallback or ensure the variable is pulled correctly
-    url: 'postgresql://postgres:admin@localhost:3000/url_shortener', 
-  },
-});
+// Prisma config removed: switching to direct PostgreSQL via `pg`.
+// If you want this file deleted, remove it from the repo.

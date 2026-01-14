@@ -1,31 +1,31 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-// import { PrismaClient } from "@prisma/client/extension";
 import { generateToken } from "../utils/jwt";
-
-import { PrismaClient } from './generated/prisma/edge'
-
-const prisma = new PrismaClient()
-// use `prisma` in your application to read and write data in your DB
+import { query } from "../db";
 
 export const register = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.create({
-    data: { email, password: hashedPassword },
-  });
+  const result = await query(
+    `INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id`,
+    [email, hashedPassword]
+  );
 
-  res.json({
-    token: generateToken(user.id),
-  });
+  const userId = result.rows[0].id;
+
+  res.json({ token: generateToken(userId) });
 };
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const result = await query(`SELECT id, password FROM users WHERE email = $1`, [
+    email,
+  ]);
+
+  const user = result.rows[0];
   if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
   const isMatch = await bcrypt.compare(password, user.password);
