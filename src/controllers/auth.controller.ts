@@ -34,6 +34,7 @@ export const login = async (req: Request, res: Response) => {
   const result = await query(`SELECT id, password_hash FROM users WHERE email = $1`, [email]);
 
   const user = result.rows[0];
+  // console.log(result)
   if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
   const isMatch = await bcrypt.compare(password, user.password_hash);
