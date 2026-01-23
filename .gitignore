@@ -1,0 +1,53 @@
+# =========================
+# Node.js
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.local
+.env.*.local
+
+# =========================
+# Build outputs
+# =========================
+dist/
+build/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor
+# =========================
+.idea/
+*.swp
+
+# VS Code (keep shared settings)
+.vscode/*
+!.vscode/settings.json
+
+# =========================
+# Testing
+# =========================
+coverage/
+
+# =========================
+# Deployment (only if used)
+# =========================
+.vercel/
+.out/
