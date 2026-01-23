@@ -18,5 +18,5 @@ export const deleteAnyTask = async (req: AuthRequest, res: Response) => {
   if (result.rows.length === 0) return res.status(404).json({ message: "Task not found" });
 
   await query(`DELETE FROM tasks WHERE id = $1`, [id]);
-  res.status(204).send();
+  res.status(200).json({ message: "Task deleted successfully" }).send();
 };

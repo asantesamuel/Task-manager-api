@@ -68,5 +68,5 @@ export const deleteTask = async (req: AuthRequest, res: Response) => {
   }
 
   await query(`DELETE FROM tasks WHERE id = $1`, [id]);
-  res.status(204).send();
+  res.status(200).json({ message: "Task deleted succesfully" }).send();
 };
