@@ -11,5 +11,5 @@ if (!process.env.JWT_SECRET) {
 }
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`http://localhost:${PORT}`);
 });
