@@ -2,6 +2,14 @@ import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { query } from "../db";
 
+// Helper function to check if the user owns the task or is an admin
+const isOwnerOrAdmin = (req: AuthRequest, task: { user_id: string }): boolean => {
+  if (!req.user) {
+    return false; // Should not happen if 'protect' middleware is used
+  }
+  return task.user_id === req.user.userId || req.user.role === 'admin';
+};
+
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
     const { title, description, status, priority, dueDate } = req.body;
@@ -88,12 +96,8 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Check ownership or admin status
-    if (task.user_id !== req.userId) {
-      const adm = await query(`SELECT role FROM users WHERE id = $1`, [req.userId]);
-      if (!adm.rows[0] || adm.rows[0].role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
+    if (!isOwnerOrAdmin(req, task)) {
+      return res.status(403).json({ message: "Forbidden: You do not have access to this task" });
     }
 
     // Format task for frontend
@@ -128,12 +132,8 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Check ownership or admin status
-    if (task.user_id !== req.userId) {
-      const adm = await query(`SELECT role FROM users WHERE id = $1`, [req.userId]);
-      if (!adm.rows[0] || adm.rows[0].role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
+    if (!isOwnerOrAdmin(req, task)) {
+      return res.status(403).json({ message: "Forbidden: You do not have access to this task" });
     }
 
     // Map frontend status to database completed field
@@ -191,12 +191,8 @@ export const deleteTask = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Check ownership or admin status
-    if (task.user_id !== req.userId) {
-      const adm = await query(`SELECT role FROM users WHERE id = $1`, [req.userId]);
-      if (!adm.rows[0] || adm.rows[0].role !== "admin") {
-        return res.status(403).json({ message: "Forbidden" });
-      }
+    if (!isOwnerOrAdmin(req, task)) {
+      return res.status(403).json({ message: "Forbidden: You do not have access to this task" });
     }
 
     await query(`DELETE FROM tasks WHERE id = $1`, [id]);
