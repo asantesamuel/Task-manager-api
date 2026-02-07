@@ -5,10 +5,10 @@ import { query } from "../db";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { fname, email, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: "email and password are required" });
+    if (!fname || !email || !password)
+      return res.status(400).json({ message: "All fields are required" });
 
     // Check for existing email
     const existing = await query(`SELECT id FROM users WHERE email = $1`, [email]);
@@ -19,10 +19,10 @@ export const register = async (req: Request, res: Response) => {
 
     // Return user data along with id
     const result = await query(
-      `INSERT INTO users (email, password_hash, role) 
-       VALUES ($1, $2, 'user') 
+      `INSERT INTO users (fname, email, password_hash, role) 
+       VALUES ($1, $2, $3, 'user') 
        RETURNING id, email, role, created_at`,
-      [email, hashed]
+      [fname, email, hashed]
     );
 
     const user = result.rows[0];
@@ -35,6 +35,7 @@ export const register = async (req: Request, res: Response) => {
       token,
       user: {
         id: user.id,
+        fname:user.fname,
         email: user.email,
         role: user.role,
         createdAt: user.created_at
@@ -55,7 +56,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Get user data including role and created_at
     const result = await query(
-      `SELECT id, email, role, password_hash, created_at 
+      `SELECT id, fname, email, role, password_hash, created_at 
        FROM users WHERE email = $1`, 
       [email]
     );
@@ -74,6 +75,7 @@ export const login = async (req: Request, res: Response) => {
       token,
       user: {
         id: user.id,
+        fname: user.fname,
         email: user.email,
         role: user.role,
         createdAt: user.created_at
