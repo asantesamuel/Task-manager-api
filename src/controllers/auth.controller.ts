@@ -21,14 +21,14 @@ export const register = async (req: Request, res: Response) => {
     const result = await query(
       `INSERT INTO users (fname, email, password_hash, role) 
        VALUES ($1, $2, $3, 'user') 
-       RETURNING id, email, role, created_at`,
+       RETURNING id, fname, email, role, created_at`,
       [fname, email, hashed]
     );
 
     const user = result.rows[0];
     
     // Generate token with all user data
-    const token = generateToken(user.id, user.email, user.role);
+    const token = generateToken(user.id, user.fname, user.email, user.role);
     
     // Return both token and user object (frontend expects this)
     res.status(201).json({ 
@@ -68,7 +68,7 @@ export const login = async (req: Request, res: Response) => {
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
     // Generate token with all user data
-    const token = generateToken(user.id, user.email, user.role);
+    const token = generateToken(user.id, user.fname, user.email, user.role);
     
     // Return both token and user object (frontend expects this)
     res.json({ 
@@ -86,3 +86,4 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
