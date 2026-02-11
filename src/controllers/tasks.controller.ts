@@ -48,6 +48,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
     console.log("dueDate:", dueDate);
     console.log("dueTime:", dueTime);
     console.log("timeZone:", timeZone);
+    console.log("dueAtUtc:", dueAtUtc);
 
     const result = await query(
       `INSERT INTO tasks (
@@ -72,9 +73,10 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     const task = result.rows[0];
 
-    const dueFields = task.due_at
-      ? fromUtcDueAt(task.due_at, timeZone)
-      : { dueDate: null, dueTime: null };
+    const dueFields =
+      task.due_at && timeZone
+        ? fromUtcDueAt(task.due_at, timeZone)
+        : { dueDate: null, dueTime: null };
 
     res.status(201).json({
       id: task.id,
@@ -98,7 +100,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
 export const getMyTasks = async (req: AuthRequest, res: Response) => {
   try {
-    const { timeZone } = req.query as { timeZone: string };
+    const { timeZone } = req.query as { timeZone?: string };
 
     const result = await query(
       `SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC`,
@@ -137,7 +139,7 @@ export const getMyTasks = async (req: AuthRequest, res: Response) => {
 export const getTaskById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { timeZone } = req.query as { timeZone: string };
+    const { timeZone } = req.query as { timeZone?: string };
 
     const result = await query(`SELECT * FROM tasks WHERE id = $1`, [id]);
 
@@ -178,33 +180,66 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     const { title, description, status, priority, dueDate, dueTime, timeZone } =
       req.body;
 
+    
+
     const completed =
       status === "completed" ? true : status === "pending" ? false : null;
 
-    const dueAtUtc =
-      dueDate && dueTime && timeZone
-        ? toUtcDueAt(dueDate, dueTime, timeZone)
-        : null;
+    // Allow explicit null to clear the due date
+    let dueAtUtc = undefined;
+    if (
+      dueDate !== undefined &&
+      dueTime !== undefined &&
+      timeZone !== undefined
+    ) {
+      dueAtUtc =
+        dueDate && dueTime && timeZone
+          ? toUtcDueAt(dueDate, dueTime, timeZone)
+          : null; // Explicitly set to null if clearing
+    }
+
+    console.log("RAW BODY:", req.body);
+    console.log("dueDate:", dueDate);
+    console.log("dueTime:", dueTime);
+    console.log("timeZone:", timeZone);
+    console.log("dueAtUtc:", dueAtUtc);
+
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updates.push(`title = $${paramCount++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description || null);
+    }
+    if (completed !== null) {
+      updates.push(`completed = $${paramCount++}`);
+      values.push(completed);
+    }
+    if (priority !== undefined) {
+      updates.push(`priority = $${paramCount++}`);
+      values.push(priority);
+    }
+    if (dueAtUtc !== undefined) {
+      updates.push(`due_at = $${paramCount++}`);
+      values.push(dueAtUtc);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
 
     const result = await query(
-      `UPDATE tasks
-       SET
-         title = COALESCE($1, title),
-         description = COALESCE($2, description),
-         completed = COALESCE($3, completed),
-         priority = COALESCE($4, priority),
-         due_at = COALESCE($5, due_at),
-         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6
-       RETURNING *`,
-      [
-        title || null,
-        description !== undefined ? description : null,
-        completed,
-        priority || null,
-        dueAtUtc,
-        id,
-      ],
+      `UPDATE tasks SET ${updates.join(", ")} WHERE id = $${paramCount} RETURNING *`,
+      values,
     );
 
     const task = result.rows[0];
