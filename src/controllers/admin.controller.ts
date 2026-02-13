@@ -94,11 +94,12 @@ export const getUserById = async (req: AuthRequest, res: Response) => {
 ========================= */
 export const createUser = async (req: AuthRequest, res: Response) => {
   try {
-    const { fname, email, password, role = 'user' } = req.body;
+    const { fname, email, password, role } = req.body;
+    console.log("Create user request body:", req.body);
 
     // Validate required fields
-    if (!fname || !email || !password) {
-      return res.status(400).json({ message: "Name, email, and password are required" });
+    if (!fname || !email || !password || !role) {
+      return res.status(400).json({ message: "Name, email, password, and role are required" });
     }
 
     // Check if user already exists
@@ -116,7 +117,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
     // Create user
     const result = await query(
-      `INSERT INTO users (fname, email, password, role, is_active)
+      `INSERT INTO users (fname, email, password_hash, role, is_active)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, fname, email, role, is_active, created_at, updated_at`,
       [fname, email, hashedPassword, role, true]
